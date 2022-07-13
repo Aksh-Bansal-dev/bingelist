@@ -10,6 +10,9 @@ import (
 )
 
 func main() {
+	if os.Getenv("ENV") == "dev" {
+		log.SetFlags(log.Lshortfile)
+	}
 	routes.Routes()
 
 	port := os.Getenv("PORT")

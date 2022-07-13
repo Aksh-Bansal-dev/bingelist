@@ -4,45 +4,38 @@ import (
 	"errors"
 )
 
-type Album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist Artist  `json:"artist"`
-	Price  float64 `json:"price"`
+type Show struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
 }
 
-type Artist struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+var shows = []Show{
+	{ID: "1", Title: "Blue Train"},
+	{ID: "2", Title: "Jeru"},
+	{ID: "3", Title: "Sarah Vaughan and Clifford Brown"},
 }
 
-var albums = []Album{
-	{ID: "1", Title: "Blue Train", Artist: Artist{Name: "John Coltrane", Age: 56}, Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: Artist{Name: "Gerry Mulligan", Age: 43}, Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: Artist{Name: "Sarah Vaughan", Age: 32}, Price: 39.99},
-}
-
-func Get(id string) (Album, error) {
-	for _, a := range albums {
+func Get(id string) (Show, error) {
+	for _, a := range shows {
 		if a.ID == id {
 			return a, nil
 		}
 	}
-	return Album{}, errors.New("Not found")
+	return Show{}, errors.New("Not found")
 }
 
-func GetAll() []Album {
-	return albums
+func GetAll() []Show {
+	return shows
 }
 
-func Add(data Album) {
-	albums = append(albums, data)
+func Add(data Show) {
+	shows = append(shows, data)
 }
 
-func Update(id string, data Album) error {
-	for i, a := range albums {
+func Update(id string, data Show) error {
+	for i, a := range shows {
 		if a.ID == id {
-			albums[i] = data
+			shows[i] = data
 			return nil
 		}
 	}
@@ -51,7 +44,7 @@ func Update(id string, data Album) error {
 
 func Delete(id string) error {
 	idx := -1
-	for i, a := range albums {
+	for i, a := range shows {
 		if a.ID == id {
 			idx = i
 			break
@@ -60,7 +53,7 @@ func Delete(id string) error {
 	if idx == -1 {
 		return errors.New("Not found")
 	}
-	albums[idx] = albums[len(albums)-1]
-	albums = albums[:len(albums)-1]
+	shows[idx] = shows[len(shows)-1]
+	shows = shows[:len(shows)-1]
 	return nil
 }
