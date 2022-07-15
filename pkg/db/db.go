@@ -4,15 +4,36 @@ import (
 	"errors"
 )
 
+type User struct {
+	Email  string `json:"email"`
+	UserId string `json:"userId"`
+}
+
 type Show struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
+}
+type Upvote struct {
+	ShowID string `json:"showId"`
+	UserID string `json:"userId"`
 }
 
 var shows = []Show{
 	{ID: "1", Title: "Blue Train"},
 	{ID: "2", Title: "Jeru"},
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown"},
+}
+
+var upvotes = []Upvote{
+	{ShowID: "1", UserID: "001"},
+	{ShowID: "1", UserID: "002"},
+	{ShowID: "1", UserID: "003"},
+	{ShowID: "1", UserID: "004"},
+	{ShowID: "2", UserID: "001"},
+}
+
+var users = []User{
+	{Email: "randomguy@gmail.com", UserId: "001"},
 }
 
 func Get(id string) (Show, error) {
@@ -24,36 +45,41 @@ func Get(id string) (Show, error) {
 	return Show{}, errors.New("Not found")
 }
 
-func GetAll() []Show {
-	return shows
+func GetAll() ([]Show, []Upvote) {
+	return shows, upvotes
 }
 
-func Add(data Show) {
+func AddShow(data Show) {
 	shows = append(shows, data)
 }
 
-func Update(id string, data Show) error {
-	for i, a := range shows {
-		if a.ID == id {
-			shows[i] = data
-			return nil
+func AddVote(data Upvote) error {
+	for _, vote := range upvotes {
+		if vote == data {
+			return errors.New("Cannot vote twice")
 		}
 	}
-	return errors.New("Not found")
+	upvotes = append(upvotes, data)
+	return nil
 }
 
-func Delete(id string) error {
-	idx := -1
-	for i, a := range shows {
-		if a.ID == id {
-			idx = i
-			break
+func AddUser(email string) string {
+	hash := encrypt(email)
+	data := User{Email: email, UserId: hash}
+	for _, u := range users {
+		if u.Email == email {
+			return hash
 		}
 	}
-	if idx == -1 {
-		return errors.New("Not found")
+	users = append(users, data)
+	return hash
+}
+
+func DoesUserExist(token string) bool {
+	for _, u := range users {
+		if u.UserId == token {
+			return true
+		}
 	}
-	shows[idx] = shows[len(shows)-1]
-	shows = shows[:len(shows)-1]
-	return nil
+	return false
 }

@@ -7,11 +7,60 @@
     <title>Go home</title>
   </head>
   <body>
-    <a href="">Login</a>
-    <ul>
-      {{range .}}
-      <li>{{.Title}}</li>
-      {{end}}
-    </ul>
+    <a href="/login">Login</a>
+    <ul></ul>
+    <button id="add">Add</button>
   </body>
+  <script defer>
+    const ul = document.getElementsByTagName("ul")[0];
+    const addBtn = document.getElementById("add");
+
+    // Main
+    const pageData = {{.}}
+    pageData.forEach(row => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.textContent  = " +1 "
+      btn.addEventListener("click",async(e)=>{
+        e.preventDefault();
+        await fetch("/vote", {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({
+            showId: row.ID,
+            userId: "TODO: from localstorage after auth",
+          }),
+        });
+        window.location.reload();
+      })
+      btn.disabled = row.canUpvote
+      const num = document.createElement("span");
+      num.textContent  = " ["+row.Upvotes+"] "
+      const span = document.createElement("span");
+      span.textContent  = " "+row.Title
+      li.appendChild(btn)
+      li.appendChild(num)
+      li.appendChild(span)
+      ul.appendChild(li)
+    });
+
+    // Add new Show
+    addBtn.addEventListener("click", async (e) => {
+      const title = prompt("Show name", "");
+      e.preventDefault();
+      if(title=="")return;
+      await fetch("/add", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+        }),
+      });
+      window.location.reload();
+    });
+  </script>
 </html>
