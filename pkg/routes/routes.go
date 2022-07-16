@@ -37,20 +37,20 @@ func pageHandler(tmpl *template.Template) func(w http.ResponseWriter, r *http.Re
 			http.Error(w, "Method not supported", 405)
 			return
 		}
-		// separate api for getting if upvoted a show or not
-		res := []ShowRes{}
-		shows, upvotes := db.GetAll()
-		for _, show := range shows {
-			votes := 0
-			canUpvote := false
-			for _, upvote := range upvotes {
-				if upvote.ShowID == show.ID {
-					votes++
-				}
-			}
-			res = append(res, ShowRes{ID: show.ID, Title: show.Title, Upvotes: votes, CanUpvote: canUpvote})
-		}
-		tmpl.Execute(w, res)
+
+		// res := []ShowRes{}
+		// shows, upvotes := db.GetAll()
+		// for _, show := range shows {
+		// 	votes := 0
+		// 	canUpvote := false
+		// 	for _, upvote := range upvotes {
+		// 		if upvote.ShowID == show.ID {
+		// 			votes++
+		// 		}
+		// 	}
+		// 	res = append(res, ShowRes{ID: show.ID, Title: show.Title, Upvotes: votes, CanUpvote: canUpvote})
+		// }
+		tmpl.Execute(w, nil)
 	}
 }
 
@@ -88,30 +88,58 @@ func moviesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != "POST" && r.Method != "GET" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 	}
 	token := r.Header.Get("Authorization")
 	if !db.DoesUserExist(token) {
-		http.Error(w, "User doesnt exist", http.StatusBadRequest)
-		return
-	}
-	var body db.Upvote
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		http.Error(w, "Try again later", 400)
-		return
+		token = ""
 	}
 
-	err = db.AddVote(body)
-	if err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
+	if r.Method == "GET" {
+		res := []ShowRes{}
+		shows, upvotes := db.GetAll()
+		for _, show := range shows {
+			votes := 0
+			canUpvote := true
+			if token == "" {
+				canUpvote = false
+			}
+			for _, upvote := range upvotes {
+				if upvote.ShowID == show.ID {
+					if upvote.UserID == token {
+						canUpvote = false
+					}
+					votes++
+				}
+			}
+			res = append(res, ShowRes{ID: show.ID, Title: show.Title, Upvotes: votes, CanUpvote: canUpvote})
+		}
+		w.WriteHeader(200)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(res)
+	} else {
+		if token == "" {
+			http.Error(w, "User doesnt exist", http.StatusBadRequest)
+			return
+		}
+		var body db.Upvote
+		err := json.NewDecoder(r.Body).Decode(&body)
+		if err != nil {
+			http.Error(w, "Try again later", 400)
+			return
+		}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(struct {
-		Ok bool `json:"ok"`
-	}{Ok: true})
+		err = db.AddVote(body)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(struct {
+			Ok bool `json:"ok"`
+		}{Ok: true})
+	}
 }

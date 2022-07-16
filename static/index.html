@@ -8,49 +8,66 @@
   </head>
   <body>
     <a href="/login">Login</a>
+    <a id="logout" href="">Logout</a>
     <ul></ul>
     <button id="add">Add</button>
   </body>
   <script defer>
     const ul = document.getElementsByTagName("ul")[0];
     const addBtn = document.getElementById("add");
+    const logoutLink = document.getElementById("logout");
 
     // Main
-    const pageData = {{.}}
-    pageData.forEach(row => {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      btn.textContent  = " +1 "
-      btn.addEventListener("click",async(e)=>{
-        e.preventDefault();
-        await fetch("/vote", {
-          method: "POST",
-          headers: {
-            "Content-type": "application/json",
-          },
-          body: JSON.stringify({
-            showId: row.ID,
-            userId: "TODO: from localstorage after auth",
-          }),
+    const loadInitialData = async () => {
+      const token = localStorage.getItem("token");
+      if (token === null) {
+        token = "";
+      }
+      const data = await fetch("/vote", {
+        headers: {
+          Authorization: token,
+        },
+      });
+
+      const pageData = await data.json();
+      pageData.forEach((row) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.textContent = " +1 ";
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          await fetch("/vote", {
+            method: "POST",
+            headers: {
+              "Content-type": "application/json",
+              Authorization: token,
+            },
+            body: JSON.stringify({
+              showId: row.ID,
+              userId: token,
+            }),
+          });
+          window.location.reload();
         });
-        window.location.reload();
-      })
-      btn.disabled = row.canUpvote
-      const num = document.createElement("span");
-      num.textContent  = " ["+row.Upvotes+"] "
-      const span = document.createElement("span");
-      span.textContent  = " "+row.Title
-      li.appendChild(btn)
-      li.appendChild(num)
-      li.appendChild(span)
-      ul.appendChild(li)
-    });
+        btn.disabled = !row.CanUpvote;
+        const num = document.createElement("span");
+        num.textContent = " [" + row.Upvotes + "] ";
+        const span = document.createElement("span");
+        span.textContent = " " + row.Title;
+        li.appendChild(btn);
+        li.appendChild(num);
+        li.appendChild(span);
+        ul.appendChild(li);
+      });
+    };
+
+    window.onload = loadInitialData();
 
     // Add new Show
     addBtn.addEventListener("click", async (e) => {
       const title = prompt("Show name", "");
       e.preventDefault();
-      if(title=="")return;
+      if (title == "") return;
       await fetch("/add", {
         method: "POST",
         headers: {
@@ -60,6 +77,12 @@
           title,
         }),
       });
+      window.location.reload();
+    });
+
+    // Logout
+    logoutLink.addEventListener("click", () => {
+      localStorage.removeItem("token");
       window.location.reload();
     });
   </script>

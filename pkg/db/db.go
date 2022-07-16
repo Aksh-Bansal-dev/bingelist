@@ -27,13 +27,13 @@ var shows = []Show{
 var upvotes = []Upvote{
 	{ShowID: "1", UserID: "001"},
 	{ShowID: "1", UserID: "002"},
-	{ShowID: "1", UserID: "003"},
+	{ShowID: "1", UserID: "deb83252b4353d79bf3fa48bb81df35037426dfd0e6fe7502721a4781038694c"},
 	{ShowID: "1", UserID: "004"},
 	{ShowID: "2", UserID: "001"},
 }
 
 var users = []User{
-	{Email: "randomguy@gmail.com", UserId: "001"},
+	{Email: "randomguy@gmail.com", UserId: "deb83252b4353d79bf3fa48bb81df35037426dfd0e6fe7502721a4781038694c"},
 }
 
 func Get(id string) (Show, error) {
