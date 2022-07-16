@@ -2,7 +2,6 @@ package db
 
 import (
 	"errors"
-	"log"
 
 	"gorm.io/gorm"
 )
@@ -25,13 +24,13 @@ type Upvote struct {
 	UserID string `json:"userId"`
 }
 
-func GetShows(db *gorm.DB) []Show {
+func GetShows(db *gorm.DB) ([]Show, error) {
 	var res []Show
 	err := db.Model(&Show{}).Preload("Upvotes").Find(&res).Error
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	return res
+	return res, nil
 }
 
 func AddShow(db *gorm.DB, data *Show) {
@@ -42,7 +41,7 @@ func AddVote(db *gorm.DB, data Upvote) error {
 	var rows []Upvote
 	err := db.Where("show_id = ? AND user_id = ?", data.ShowID, data.UserID).Find(&rows).Error
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 	if len(rows) > 0 {
 		return errors.New("Cannot vote twice")
@@ -51,25 +50,25 @@ func AddVote(db *gorm.DB, data Upvote) error {
 	return nil
 }
 
-func AddUser(db *gorm.DB, email string) string {
+func AddUser(db *gorm.DB, email string) (string, error) {
 	hash := encrypt(email)
 	data := User{Email: email, UserID: hash}
 	var rows []User
 	err := db.Where("email = ?", email).Find(&rows).Error
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 	if len(rows) == 0 {
 		db.Create(&data)
 	}
-	return hash
+	return hash, nil
 }
 
-func DoesUserExist(db *gorm.DB, token string) bool {
+func DoesUserExist(db *gorm.DB, token string) (bool, error) {
 	var rows []User
 	err := db.Where("user_id = ?", token).Find(&rows).Error
 	if err != nil {
-		log.Println(err)
+		return false, err
 	}
-	return len(rows) > 0
+	return len(rows) > 0, nil
 }

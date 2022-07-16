@@ -30,11 +30,13 @@ func setup() {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("/login")
 	url := googleOauthConfig.AuthCodeURL(oauthStateString)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func googleCallbackHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	log.Println("/login/redirect")
 	content, err := getUserInfo(r.FormValue("state"), r.FormValue("code"))
 	if err != nil {
 		log.Println(err.Error())
@@ -45,7 +47,12 @@ func googleCallbackHandler(w http.ResponseWriter, r *http.Request, database *gor
 	json.Unmarshal(content, &data)
 	log.Println("NewUser:", data)
 
-	token := db.AddUser(database, data["email"])
+	token, err := db.AddUser(database, data["email"])
+	if err != nil {
+		http.Error(w, "Something went wrong in DB", 400)
+		log.Println(err)
+		return
+	}
 
 	fmt.Fprintf(w, `
 		<h1>Loading...</h1>	

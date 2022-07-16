@@ -48,8 +48,10 @@ func Routes(database *gorm.DB) {
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("/ping")
 	if r.Method != "GET" {
 		http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
+		log.Println("Method not supported")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -57,23 +59,34 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func moviesHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	log.Println("/add")
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		fmt.Println("Method not allowed.")
+		return
 	}
-	log.Println("/add")
 	token := r.Header.Get("Authorization")
-	if !db.DoesUserExist(database, token) {
-		http.Error(w, "User doesnt exist", http.StatusBadRequest)
+	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Something wend wrong with DB", 400)
+			return
+		} else {
+			log.Println("User does not exists")
+		}
+		http.Error(w, "User does not exists", http.StatusBadRequest)
 		return
 	}
 	var body db.Show
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, "Could not add movie, try again later", 400)
+		log.Println(err)
 		return
 	}
 	if body.Title == "" {
 		http.Error(w, "Title must be non-empty", 400)
+		log.Println("Title must be non-empty")
 		return
 	}
 	db.AddShow(database, &body)
@@ -86,16 +99,30 @@ func moviesHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 }
 
 func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	log.Println("/init-data")
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		fmt.Println("Method not allowed.")
+		return
 	}
-	log.Println("/init-data")
 	token := r.Header.Get("Authorization")
-	if !db.DoesUserExist(database, token) {
+	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Something went wrong in DB", 400)
+			return
+		} else {
+			log.Println("User does not exists")
+		}
 		token = ""
 	}
 	res := []InitDataRow{}
-	data := db.GetShows(database)
+	data, err := db.GetShows(database)
+	if err != nil {
+		http.Error(w, "Something went wrong in DB", 400)
+		log.Println(err)
+		return
+	}
 	for _, show := range data {
 		canUpvote := true
 		if token == "" {
@@ -119,24 +146,35 @@ func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) 
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	log.Println("/vote")
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		fmt.Println("Method not allowed.")
+		return
 	}
-	log.Println("/vote")
 	token := r.Header.Get("Authorization")
-	if !db.DoesUserExist(database, token) {
-		http.Error(w, "User doesnt exist", http.StatusBadRequest)
+	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Something wend wrong with DB", 400)
+			return
+		} else {
+			log.Println("User does not exists")
+		}
+		http.Error(w, "User does not exists", http.StatusBadRequest)
 		return
 	}
 	var body VoteBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, "Try again later", 400)
+		fmt.Println(err)
 		return
 	}
 	showId, err := strconv.ParseUint(body.ShowID, 10, 0)
 	if err != nil {
 		http.Error(w, "Try again later", 400)
+		fmt.Println(err)
 		return
 	}
 	vote := db.Upvote{
@@ -146,6 +184,7 @@ func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 	err = db.AddVote(database, vote)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
+		fmt.Println(err)
 		return
 	}
 

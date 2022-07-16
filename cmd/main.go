@@ -19,6 +19,8 @@ func main() {
 	}
 	if os.Getenv("ENV") == "dev" {
 		log.SetFlags(log.Lshortfile)
+	} else if os.Getenv("ENV") == "prod" {
+		log.SetFlags(log.Lshortfile | log.LstdFlags)
 	}
 	database := db.Connect()
 	routes.Routes(database)
