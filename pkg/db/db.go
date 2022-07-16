@@ -14,6 +14,7 @@ func Connect() *gorm.DB {
 	if err != nil {
 		log.Fatal("failed to connect database", err)
 	}
+	// db.Exec("DROP TABLE IF EXISTS shows, users, upvotes")
 	db.AutoMigrate(&User{}, &Show{}, &Upvote{})
 	return db
 }

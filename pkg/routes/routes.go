@@ -2,18 +2,25 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
 	"gorm.io/gorm"
 )
 
 type InitDataRow struct {
-	ID        uint
+	ID        string
 	Title     string
 	Upvotes   int
 	CanUpvote bool
+}
+
+type VoteBody struct {
+	ShowID string `json:"showId"`
+	UserID string `json:"userId"`
 }
 
 var FileServer = http.FileServer(http.Dir("./static"))
@@ -99,7 +106,12 @@ func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) 
 				canUpvote = false
 			}
 		}
-		res = append(res, InitDataRow{ID: show.ID, Title: show.Title, Upvotes: len(show.Upvotes), CanUpvote: canUpvote})
+		res = append(res, InitDataRow{
+			ID:        fmt.Sprint(show.ID),
+			Title:     show.Title,
+			Upvotes:   len(show.Upvotes),
+			CanUpvote: canUpvote,
+		})
 	}
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
@@ -116,14 +128,22 @@ func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 		http.Error(w, "User doesnt exist", http.StatusBadRequest)
 		return
 	}
-	var body db.Upvote
+	var body VoteBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, "Try again later", 400)
 		return
 	}
-
-	err = db.AddVote(database, body)
+	showId, err := strconv.ParseUint(body.ShowID, 10, 0)
+	if err != nil {
+		http.Error(w, "Try again later", 400)
+		return
+	}
+	vote := db.Upvote{
+		ShowID: uint(showId),
+		UserID: body.UserID,
+	}
+	err = db.AddVote(database, vote)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
