@@ -10,7 +10,7 @@ import (
 )
 
 type InitDataRow struct {
-	ID        string
+	ID        uint
 	Title     string
 	Upvotes   int
 	CanUpvote bool
@@ -19,11 +19,9 @@ type InitDataRow struct {
 var FileServer = http.FileServer(http.Dir("./static"))
 
 func Routes(database *gorm.DB) {
-	// tmpl := template.Must(template.ParseFiles("static/index.html"))
 	static := http.Dir("./static")
 	setup()
 
-	// change this to a static page
 	http.Handle("/", http.FileServer(static))
 
 	http.HandleFunc("/ping", pingHandler)
@@ -42,16 +40,6 @@ func Routes(database *gorm.DB) {
 	})
 }
 
-// func pageHandler(tmpl *template.Template) func(w http.ResponseWriter, r *http.Request) {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		if r.Method != "GET" {
-// 			http.Error(w, "Method not supported", 405)
-// 			return
-// 		}
-// 		tmpl.Execute(w, nil)
-// 	}
-// }
-
 func pingHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
@@ -66,6 +54,11 @@ func moviesHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 	}
 	log.Println("/add")
+	token := r.Header.Get("Authorization")
+	if !db.DoesUserExist(database, token) {
+		http.Error(w, "User doesnt exist", http.StatusBadRequest)
+		return
+	}
 	var body db.Show
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {

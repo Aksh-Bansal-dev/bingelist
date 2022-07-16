@@ -14,8 +14,6 @@ func Connect() *gorm.DB {
 	if err != nil {
 		log.Fatal("failed to connect database", err)
 	}
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Show{})
-	db.AutoMigrate(&Upvote{})
+	db.AutoMigrate(&User{}, &Show{}, &Upvote{})
 	return db
 }

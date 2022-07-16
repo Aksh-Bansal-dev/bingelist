@@ -7,7 +7,7 @@
     <title>Go home</title>
   </head>
   <body>
-    <a href="/login">Login</a>
+    <a id="login" href="/login">Login</a>
     <a id="logout" href="">Logout</a>
     <ul></ul>
     <button id="add">Add</button>
@@ -16,10 +16,11 @@
     const ul = document.getElementsByTagName("ul")[0];
     const addBtn = document.getElementById("add");
     const logoutLink = document.getElementById("logout");
+    const loginLink = document.getElementById("login");
 
     // Main
     const loadInitialData = async () => {
-      const token = localStorage.getItem("token");
+      let token = localStorage.getItem("token");
       if (token === null) {
         token = "";
       }
@@ -59,8 +60,15 @@
         li.appendChild(span);
         ul.appendChild(li);
       });
-
-      addBtn.disabled = token === "";
+      if (token === "") {
+        addBtn.disabled = true;
+        logoutLink.innerText = "";
+        loginLink.innerText = "Login";
+      } else {
+        addBtn.disabled = false;
+        logoutLink.innerText = "Logout";
+        loginLink.innerText = "";
+      }
     };
 
     window.onload = loadInitialData();
@@ -74,6 +82,7 @@
         method: "POST",
         headers: {
           "Content-type": "application/json",
+          Authorization: localStorage.getItem("token"),
         },
         body: JSON.stringify({
           title,

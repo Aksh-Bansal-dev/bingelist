@@ -14,14 +14,14 @@ type User struct {
 }
 
 type Show struct {
-	ID      string `gorm:"primaryKey"`
+	ID      uint `gorm:"primaryKey"`
 	Title   string
 	Upvotes []Upvote
 }
 
 type Upvote struct {
 	ID     uint   `gorm:"primaryKey"`
-	ShowID string `json:"showId"`
+	ShowID uint   `json:"showId"`
 	UserID string `json:"userId"`
 }
 
