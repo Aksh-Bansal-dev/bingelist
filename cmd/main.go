@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
 	"github.com/Aksh-Bansal-dev/bingelist/pkg/routes"
 )
 
@@ -19,7 +20,8 @@ func main() {
 	if os.Getenv("ENV") == "dev" {
 		log.SetFlags(log.Lshortfile)
 	}
-	routes.Routes()
+	database := db.Connect()
+	routes.Routes(database)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {

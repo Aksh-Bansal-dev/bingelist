@@ -2,15 +2,14 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
-	"html/template"
-	"math/rand"
+	"log"
 	"net/http"
 
 	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
+	"gorm.io/gorm"
 )
 
-type ShowRes struct {
+type InitDataRow struct {
 	ID        string
 	Title     string
 	Upvotes   int
@@ -19,40 +18,39 @@ type ShowRes struct {
 
 var FileServer = http.FileServer(http.Dir("./static"))
 
-func Routes() {
-	tmpl := template.Must(template.ParseFiles("static/index.html"))
+func Routes(database *gorm.DB) {
+	// tmpl := template.Must(template.ParseFiles("static/index.html"))
+	static := http.Dir("./static")
 	setup()
 
-	http.HandleFunc("/", pageHandler(tmpl))
+	// change this to a static page
+	http.Handle("/", http.FileServer(static))
+
 	http.HandleFunc("/ping", pingHandler)
-	http.HandleFunc("/add", moviesHandler)
-	http.HandleFunc("/vote", voteHandler)
+	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
+		moviesHandler(w, r, database)
+	})
+	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
+		voteHandler(w, r, database)
+	})
+	http.HandleFunc("/init-data", func(w http.ResponseWriter, r *http.Request) {
+		initDataHandler(w, r, database)
+	})
 	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/login/redirect", googleCallbackHandler)
+	http.HandleFunc("/login/redirect", func(w http.ResponseWriter, r *http.Request) {
+		googleCallbackHandler(w, r, database)
+	})
 }
 
-func pageHandler(tmpl *template.Template) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "Method not supported", 405)
-			return
-		}
-
-		// res := []ShowRes{}
-		// shows, upvotes := db.GetAll()
-		// for _, show := range shows {
-		// 	votes := 0
-		// 	canUpvote := false
-		// 	for _, upvote := range upvotes {
-		// 		if upvote.ShowID == show.ID {
-		// 			votes++
-		// 		}
-		// 	}
-		// 	res = append(res, ShowRes{ID: show.ID, Title: show.Title, Upvotes: votes, CanUpvote: canUpvote})
-		// }
-		tmpl.Execute(w, nil)
-	}
-}
+// func pageHandler(tmpl *template.Template) func(w http.ResponseWriter, r *http.Request) {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		if r.Method != "GET" {
+// 			http.Error(w, "Method not supported", 405)
+// 			return
+// 		}
+// 		tmpl.Execute(w, nil)
+// 	}
+// }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -63,10 +61,11 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "pong"})
 }
 
-func moviesHandler(w http.ResponseWriter, r *http.Request) {
+func moviesHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 	}
+	log.Println("/add")
 	var body db.Show
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -77,8 +76,7 @@ func moviesHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Title must be non-empty", 400)
 		return
 	}
-	body.ID = fmt.Sprint(rand.Int())
-	db.AddShow(body)
+	db.AddShow(database, &body)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
@@ -87,59 +85,60 @@ func moviesHandler(w http.ResponseWriter, r *http.Request) {
 	}{Ok: true})
 }
 
-func voteHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" && r.Method != "GET" {
+func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	if r.Method != "GET" {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 	}
+	log.Println("/init-data")
 	token := r.Header.Get("Authorization")
-	if !db.DoesUserExist(token) {
+	if !db.DoesUserExist(database, token) {
 		token = ""
 	}
-
-	if r.Method == "GET" {
-		res := []ShowRes{}
-		shows, upvotes := db.GetAll()
-		for _, show := range shows {
-			votes := 0
-			canUpvote := true
-			if token == "" {
+	res := []InitDataRow{}
+	data := db.GetShows(database)
+	for _, show := range data {
+		canUpvote := true
+		if token == "" {
+			canUpvote = false
+		}
+		for _, upvote := range show.Upvotes {
+			if upvote.ShowID == show.ID && upvote.UserID == token {
 				canUpvote = false
 			}
-			for _, upvote := range upvotes {
-				if upvote.ShowID == show.ID {
-					if upvote.UserID == token {
-						canUpvote = false
-					}
-					votes++
-				}
-			}
-			res = append(res, ShowRes{ID: show.ID, Title: show.Title, Upvotes: votes, CanUpvote: canUpvote})
 		}
-		w.WriteHeader(200)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(res)
-	} else {
-		if token == "" {
-			http.Error(w, "User doesnt exist", http.StatusBadRequest)
-			return
-		}
-		var body db.Upvote
-		err := json.NewDecoder(r.Body).Decode(&body)
-		if err != nil {
-			http.Error(w, "Try again later", 400)
-			return
-		}
-
-		err = db.AddVote(body)
-		if err != nil {
-			http.Error(w, err.Error(), 400)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(struct {
-			Ok bool `json:"ok"`
-		}{Ok: true})
+		res = append(res, InitDataRow{ID: show.ID, Title: show.Title, Upvotes: len(show.Upvotes), CanUpvote: canUpvote})
 	}
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
+
+func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+	}
+	log.Println("/vote")
+	token := r.Header.Get("Authorization")
+	if !db.DoesUserExist(database, token) {
+		http.Error(w, "User doesnt exist", http.StatusBadRequest)
+		return
+	}
+	var body db.Upvote
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, "Try again later", 400)
+		return
+	}
+
+	err = db.AddVote(database, body)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(struct {
+		Ok bool `json:"ok"`
+	}{Ok: true})
 }

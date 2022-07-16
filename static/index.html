@@ -23,7 +23,7 @@
       if (token === null) {
         token = "";
       }
-      const data = await fetch("/vote", {
+      const data = await fetch("/init-data", {
         headers: {
           Authorization: token,
         },
@@ -59,6 +59,8 @@
         li.appendChild(span);
         ul.appendChild(li);
       });
+
+      addBtn.disabled = token === "";
     };
 
     window.onload = loadInitialData();

@@ -11,6 +11,7 @@ import (
 	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"gorm.io/gorm"
 )
 
 var (
@@ -33,7 +34,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func googleCallbackHandler(w http.ResponseWriter, r *http.Request) {
+func googleCallbackHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 	content, err := getUserInfo(r.FormValue("state"), r.FormValue("code"))
 	if err != nil {
 		log.Println(err.Error())
@@ -44,7 +45,7 @@ func googleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(content, &data)
 	log.Println("NewUser:", data)
 
-	token := db.AddUser(data["email"])
+	token := db.AddUser(database, data["email"])
 
 	fmt.Fprintf(w, `
 		<h1>Loading...</h1>	
