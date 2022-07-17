@@ -4,13 +4,28 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Go home</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <title>Bingelist</title>
   </head>
-  <body>
-    <a id="login" href="/login">Login</a>
-    <a id="logout" href="">Logout</a>
-    <ul></ul>
-    <button id="add">Add</button>
+  <body class="h-screen bg-sky-900 text-slate-300">
+    <div class="p-4 pr-8 w-screen flex justify-end">
+      <a id="login" class="underline text-xl" href="/login">Login</a>
+      <a id="logout" class="underline text-xl" href="">Logout</a>
+    </div>
+    <ul
+      class="p-4 flex justify-center content-center flex-col w-full items-center"
+    ></ul>
+    <div class="flex justify-center">
+      <button
+        id="add"
+        class="bg-[#F2E8FA21] text-xl px-4 py-2 rounded disabled:opacity-50"
+      >
+        Add
+      </button>
+    </div>
   </body>
   <script defer>
     const ul = document.getElementsByTagName("ul")[0];
@@ -30,14 +45,45 @@
         },
       });
 
-      // take everything as string
       const pageData = await data.json();
       pageData.forEach((row) => {
         const li = document.createElement("li");
         const btn = document.createElement("button");
         const delBtn = document.createElement("button");
+        const num = document.createElement("span");
+        const title = document.createElement("span");
+
+        li.classList.add("bg-[#F2E8FA21]");
+        li.classList.add("w-11/12");
+        li.classList.add("p-3");
+        li.classList.add("flex");
+        li.classList.add("items-center");
+        li.classList.add("rounded");
+        li.classList.add("my-1");
+
+        btn.classList.add("px-3");
+        btn.classList.add("py-1");
+        btn.classList.add("bg-[#F2E8FA21]");
+        btn.classList.add("rounded");
+        btn.classList.add("mr-3");
+        btn.classList.add("disabled:opacity-50");
+
+        delBtn.classList.add("px-3");
+        delBtn.classList.add("py-1");
+        delBtn.classList.add("bg-[#F2E8FA21]");
+        delBtn.classList.add("rounded");
+        delBtn.classList.add("mr-3");
+
+        num.classList.add("px-3");
+        num.classList.add("py-1");
+        num.classList.add("opacity-50");
+        num.classList.add("rounded");
+        num.classList.add("mr-3");
+
+        title.classList.add("text-xl");
+
         delBtn.textContent = "x";
-        btn.textContent = " +1 ";
+        btn.textContent = "Upvote";
         delBtn.addEventListener("click", async (e) => {
           e.preventDefault();
           await fetch("/delete", {
@@ -68,16 +114,14 @@
           window.location.reload();
         });
         btn.disabled = !row.CanUpvote;
-        const num = document.createElement("span");
-        num.textContent = " [" + row.Upvotes + "] ";
-        const span = document.createElement("span");
-        span.textContent = " " + row.Title;
+        num.textContent = row.Upvotes;
+        title.textContent = row.Title;
         li.appendChild(btn);
         if (row.CanDelete) {
           li.appendChild(delBtn);
         }
         li.appendChild(num);
-        li.appendChild(span);
+        li.appendChild(title);
         ul.appendChild(li);
       });
       if (token === "") {
