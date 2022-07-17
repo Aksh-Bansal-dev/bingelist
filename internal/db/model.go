@@ -10,13 +10,13 @@ import (
 type User struct {
 	Email   string
 	UserID  string   `gorm:"primaryKey"`
-	Upvotes []Upvote `gorm:"foreignkey:UserID;references:UserID"`
+	Upvotes []Upvote `gorm:"foreignkey:UserID;references:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 type Show struct {
 	ID      uint `gorm:"primaryKey"`
 	Title   string
-	Upvotes []Upvote `gorm:"foreignkey:ShowID;references:ID"`
+	Upvotes []Upvote `gorm:"foreignkey:ShowID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 type Upvote struct {
