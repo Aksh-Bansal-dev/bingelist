@@ -45,94 +45,96 @@
         },
       });
 
-      const pageData = await data.json();
-      pageData.forEach((row) => {
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
-        const delBtn = document.createElement("button");
-        const num = document.createElement("span");
-        const title = document.createElement("span");
+      data.json().then((pageData) => {
+        ul.innerHTML = "";
+        pageData.forEach((row) => {
+          const li = document.createElement("li");
+          const btn = document.createElement("button");
+          const delBtn = document.createElement("button");
+          const num = document.createElement("span");
+          const title = document.createElement("span");
 
-        li.classList.add("bg-[#F2E8FA21]");
-        li.classList.add("w-11/12");
-        li.classList.add("p-3");
-        li.classList.add("flex");
-        li.classList.add("items-center");
-        li.classList.add("rounded");
-        li.classList.add("my-1");
+          li.classList.add("bg-[#F2E8FA21]");
+          li.classList.add("w-11/12");
+          li.classList.add("p-3");
+          li.classList.add("flex");
+          li.classList.add("items-center");
+          li.classList.add("rounded");
+          li.classList.add("my-1");
 
-        btn.classList.add("px-3");
-        btn.classList.add("py-1");
-        btn.classList.add("bg-[#F2E8FA21]");
-        btn.classList.add("rounded");
-        btn.classList.add("mr-3");
-        btn.classList.add("disabled:opacity-50");
+          btn.classList.add("px-3");
+          btn.classList.add("py-1");
+          btn.classList.add("bg-[#F2E8FA21]");
+          btn.classList.add("rounded");
+          btn.classList.add("mr-3");
+          btn.classList.add("disabled:opacity-50");
 
-        delBtn.classList.add("px-3");
-        delBtn.classList.add("py-1");
-        delBtn.classList.add("bg-[#F2E8FA21]");
-        delBtn.classList.add("rounded");
-        delBtn.classList.add("mr-3");
+          delBtn.classList.add("px-3");
+          delBtn.classList.add("py-1");
+          delBtn.classList.add("bg-[#F2E8FA21]");
+          delBtn.classList.add("rounded");
+          delBtn.classList.add("mr-3");
 
-        num.classList.add("px-3");
-        num.classList.add("py-1");
-        num.classList.add("opacity-50");
-        num.classList.add("rounded");
-        num.classList.add("mr-3");
+          num.classList.add("px-3");
+          num.classList.add("py-1");
+          num.classList.add("opacity-50");
+          num.classList.add("rounded");
+          num.classList.add("mr-3");
 
-        title.classList.add("text-xl");
+          title.classList.add("text-xl");
 
-        delBtn.textContent = "x";
-        btn.textContent = "Upvote";
-        delBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          await fetch("/delete", {
-            method: "DELETE",
-            headers: {
-              "Content-type": "application/json",
-              Authorization: token,
-            },
-            body: JSON.stringify({
-              showId: row.ID,
-            }),
+          delBtn.textContent = "x";
+          btn.textContent = "Upvote";
+          delBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            await fetch("/delete", {
+              method: "DELETE",
+              headers: {
+                "Content-type": "application/json",
+                Authorization: token,
+              },
+              body: JSON.stringify({
+                showId: row.ID,
+              }),
+            });
+            loadInitialData();
           });
-          window.location.reload();
-        });
-        btn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          await fetch("/vote", {
-            method: "POST",
-            headers: {
-              "Content-type": "application/json",
-              Authorization: token,
-            },
-            body: JSON.stringify({
-              showId: row.ID,
-              userId: token,
-            }),
+          btn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            await fetch("/vote", {
+              method: "POST",
+              headers: {
+                "Content-type": "application/json",
+                Authorization: token,
+              },
+              body: JSON.stringify({
+                showId: row.ID,
+                userId: token,
+              }),
+            });
+            loadInitialData();
           });
-          window.location.reload();
+          btn.disabled = !row.CanUpvote;
+          num.textContent = row.Upvotes;
+          title.textContent = row.Title;
+          li.appendChild(btn);
+          if (row.CanDelete) {
+            li.appendChild(delBtn);
+          }
+          li.appendChild(num);
+          li.appendChild(title);
+          ul.appendChild(li);
         });
-        btn.disabled = !row.CanUpvote;
-        num.textContent = row.Upvotes;
-        title.textContent = row.Title;
-        li.appendChild(btn);
-        if (row.CanDelete) {
-          li.appendChild(delBtn);
+        if (token === "") {
+          addBtn.disabled = true;
+          logoutLink.innerText = "";
+          loginLink.innerText = "Login";
+        } else {
+          addBtn.disabled = false;
+          logoutLink.innerText = "Logout";
+          loginLink.innerText = "";
         }
-        li.appendChild(num);
-        li.appendChild(title);
-        ul.appendChild(li);
       });
-      if (token === "") {
-        addBtn.disabled = true;
-        logoutLink.innerText = "";
-        loginLink.innerText = "Login";
-      } else {
-        addBtn.disabled = false;
-        logoutLink.innerText = "Logout";
-        loginLink.innerText = "";
-      }
     };
 
     window.onload = loadInitialData();
@@ -152,13 +154,13 @@
           title,
         }),
       });
-      window.location.reload();
+      loadInitialData();
     });
 
     // Logout
     logoutLink.addEventListener("click", () => {
       localStorage.removeItem("token");
-      window.location.reload();
+      loadInitialData();
     });
   </script>
 </html>
