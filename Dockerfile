@@ -10,6 +10,6 @@ COPY . ./
 
 RUN go build -o /docker-gs-ping ./cmd/main.go
 
-EXPOSE 3000
+EXPOSE ${PORT}
 
 ENTRYPOINT [ "/docker-gs-ping" ]
