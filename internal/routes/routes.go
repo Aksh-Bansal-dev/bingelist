@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
+	"github.com/Aksh-Bansal-dev/bingelist/internal/db"
 	"gorm.io/gorm"
 )
 
@@ -16,11 +16,16 @@ type InitDataRow struct {
 	Title     string
 	Upvotes   int
 	CanUpvote bool
+	CanDelete bool
 }
 
 type VoteBody struct {
 	ShowID string `json:"showId"`
 	UserID string `json:"userId"`
+}
+
+type DeleteShowBody struct {
+	ShowID string `json:"showId"`
 }
 
 var FileServer = http.FileServer(http.Dir("./static"))
@@ -40,6 +45,9 @@ func Routes(database *gorm.DB) {
 	})
 	http.HandleFunc("/init-data", func(w http.ResponseWriter, r *http.Request) {
 		initDataHandler(w, r, database)
+	})
+	http.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		deleteShowHandler(w, r, database)
 	})
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/login/redirect", func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +74,7 @@ func moviesHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 		return
 	}
 	token := r.Header.Get("Authorization")
-	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+	if v, err := db.DoesUserExist(database, token); err != nil || v == 0 {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Something wend wrong with DB", 400)
@@ -106,7 +114,8 @@ func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) 
 		return
 	}
 	token := r.Header.Get("Authorization")
-	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+	v, err := db.DoesUserExist(database, token)
+	if err != nil || v == 0 {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Something went wrong in DB", 400)
@@ -124,6 +133,7 @@ func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) 
 		return
 	}
 	for _, show := range data {
+		canDelete := v == 2
 		canUpvote := true
 		if token == "" {
 			canUpvote = false
@@ -138,6 +148,7 @@ func initDataHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) 
 			Title:     show.Title,
 			Upvotes:   len(show.Upvotes),
 			CanUpvote: canUpvote,
+			CanDelete: canDelete,
 		})
 	}
 	w.WriteHeader(200)
@@ -153,7 +164,7 @@ func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 		return
 	}
 	token := r.Header.Get("Authorization")
-	if v, err := db.DoesUserExist(database, token); err != nil || !v {
+	if v, err := db.DoesUserExist(database, token); err != nil || v == 0 {
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Something wend wrong with DB", 400)
@@ -190,6 +201,52 @@ func voteHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(struct {
+		Ok bool `json:"ok"`
+	}{Ok: true})
+}
+
+func deleteShowHandler(w http.ResponseWriter, r *http.Request, database *gorm.DB) {
+	log.Println("/delete")
+	if r.Method != "DELETE" {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		fmt.Println("Method not allowed.")
+		return
+	}
+	token := r.Header.Get("Authorization")
+	if v, err := db.DoesUserExist(database, token); err != nil || v != 2 {
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Something wend wrong with DB", 400)
+			return
+		} else {
+			log.Println("User does not exists")
+		}
+		http.Error(w, "User does not exists", http.StatusBadRequest)
+		return
+	}
+	var body DeleteShowBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, "Try again later", 400)
+		fmt.Println(err)
+		return
+	}
+	showId, err := strconv.ParseUint(body.ShowID, 10, 0)
+	if err != nil {
+		http.Error(w, "Try again later", 400)
+		fmt.Println(err)
+		return
+	}
+	err = db.DeleteShow(database, uint(showId))
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		fmt.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(struct {
 		Ok bool `json:"ok"`
 	}{Ok: true})

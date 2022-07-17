@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
+	"github.com/Aksh-Bansal-dev/bingelist/internal/db"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"

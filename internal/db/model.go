@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"os"
 
 	"gorm.io/gorm"
 )
@@ -37,6 +38,14 @@ func AddShow(db *gorm.DB, data *Show) {
 	db.Create(data)
 }
 
+func DeleteShow(db *gorm.DB, showId uint) error {
+	err := db.Delete(&Show{}, showId).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func AddVote(db *gorm.DB, data Upvote) error {
 	var rows []Upvote
 	err := db.Where("show_id = ? AND user_id = ?", data.ShowID, data.UserID).Find(&rows).Error
@@ -64,11 +73,16 @@ func AddUser(db *gorm.DB, email string) (string, error) {
 	return hash, nil
 }
 
-func DoesUserExist(db *gorm.DB, token string) (bool, error) {
+func DoesUserExist(db *gorm.DB, token string) (int, error) {
 	var rows []User
 	err := db.Where("user_id = ?", token).Find(&rows).Error
 	if err != nil {
-		return false, err
+		return 0, err
 	}
-	return len(rows) > 0, nil
+	if len(rows) == 0 {
+		return 0, nil
+	} else if rows[0].Email == os.Getenv("ADMIN") {
+		return 2, nil
+	}
+	return 1, nil
 }

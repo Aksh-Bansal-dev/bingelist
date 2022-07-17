@@ -35,7 +35,23 @@
       pageData.forEach((row) => {
         const li = document.createElement("li");
         const btn = document.createElement("button");
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "x";
         btn.textContent = " +1 ";
+        delBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          await fetch("/delete", {
+            method: "DELETE",
+            headers: {
+              "Content-type": "application/json",
+              Authorization: token,
+            },
+            body: JSON.stringify({
+              showId: row.ID,
+            }),
+          });
+          window.location.reload();
+        });
         btn.addEventListener("click", async (e) => {
           e.preventDefault();
           await fetch("/vote", {
@@ -57,6 +73,9 @@
         const span = document.createElement("span");
         span.textContent = " " + row.Title;
         li.appendChild(btn);
+        if (row.CanDelete) {
+          li.appendChild(delBtn);
+        }
         li.appendChild(num);
         li.appendChild(span);
         ul.appendChild(li);

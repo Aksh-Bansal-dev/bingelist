@@ -8,8 +8,8 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/Aksh-Bansal-dev/bingelist/pkg/db"
-	"github.com/Aksh-Bansal-dev/bingelist/pkg/routes"
+	"github.com/Aksh-Bansal-dev/bingelist/internal/db"
+	"github.com/Aksh-Bansal-dev/bingelist/internal/routes"
 )
 
 func main() {
