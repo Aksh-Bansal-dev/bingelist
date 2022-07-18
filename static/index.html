@@ -46,6 +46,7 @@
       });
 
       data.json().then((pageData) => {
+        pageData.sort((a, b) => b.Upvotes - a.Upvotes);
         ul.innerHTML = "";
         pageData.forEach((row) => {
           const li = document.createElement("li");
